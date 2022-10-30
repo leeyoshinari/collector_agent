@@ -25,8 +25,8 @@ def get_ip():
     :return: IP address
     """
     try:
-        if cfg.getAgent('host'):
-            IP = cfg.getAgent('host')
+        if get_configure('host'):
+            IP = get_configure('host')
         else:
             result = os.popen("hostname -I |awk '{print $1}'").readlines()
             logger.debug(result)
