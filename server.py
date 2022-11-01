@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 # @Author: leeyoshinari
 
+import os
 import asyncio
 import traceback
 from aiohttp import web
@@ -11,6 +12,9 @@ from write_database import WriterDB
 
 writer = WriterDB()
 HOST = get_ip()
+PID = os.getpid()
+with open('pid', 'w', encoding='utf-8') as f:
+    f.write(str(PID))
 
 
 async def register(request):
@@ -32,6 +36,7 @@ async def register(request):
         return web.json_response({'code': 0, 'msg': '', 'data': post_data})
     except:
         logger.error(traceback.format_exc())
+        return web.json_response({'code': 1, 'msg': 'get message failure ~'})
 
 
 async def write_influx(request):
@@ -42,6 +47,20 @@ async def write_influx(request):
     try:
         data = await request.json()
         writer.influx_line = data.get('data')
+        return web.json_response({'code': 0, 'msg': 'Write influxDB success ~'})
+    except:
+        logger.error(traceback.format_exc())
+        return web.json_response({'code': 1, 'msg': 'Write influxDB failure ~'})
+
+
+async def batch_write_influx(request):
+    """
+    :param request:
+    :return:
+    """
+    try:
+        data = await request.json()
+        writer.influx_batch = data.get('data')
         return web.json_response({'code': 0, 'msg': 'Write influxDB success ~'})
     except:
         logger.error(traceback.format_exc())
@@ -82,6 +101,7 @@ async def main():
 
     app.router.add_route('POST', '/redis/write', write_redis)
     app.router.add_route('POST', '/influx/write', write_influx)
+    app.router.add_route('POST', '/influx/batch/write', batch_write_influx)
     app.router.add_route('POST', '/register', register)
     app.router.add_route('POST', '/setMessage', set_message)
 

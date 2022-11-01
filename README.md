@@ -10,7 +10,7 @@ Before packaging, you must ensure that the python code can run normally.<br>
 - (2) Copy `config.conf` to the `dist` folder, cmd: `cp config.conf dist/`
 - (3) Enter `dist` folder, zip files, cmd: `zip collector_agent.zip server config.conf`
 - (4) Upload zip file to [MyPlatform](https://github.com/leeyoshinari/MyPlatform.git)
-- (5) Deploy monitor_agent
+- (5) Deploy collector_agent
    
    NOTE: Since it runs on the server to be monitored, the executable file packaged on the server of the CentOS system X86 architecture can only run on the server of the CentOS system X86 architecture; servers of other system and architecture need to be repackaged. <br>
 

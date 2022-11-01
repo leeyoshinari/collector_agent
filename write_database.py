@@ -17,6 +17,7 @@ class WriterDB(object):
     def __init__(self):
         self._redis_data = None
         self._influx_line = None
+        self._influx_batch = []
         self.IP = get_ip()
         self.thread_pool = int(get_configure('threadPool')) if int(get_configure('threadPool')) > 0 else 1
 
@@ -48,6 +49,16 @@ class WriterDB(object):
     @influx_line.setter
     def influx_line(self, value):
         self.writer_task.put((self.write_influx, value))
+
+    @property
+    def influx_batch(self):
+        return self._influx_batch
+
+    @influx_batch.setter
+    def influx_batch(self, value):
+        # Still write data one by one, aimed to reduce http request time.
+        for line in value:
+            self.writer_task.put((self.write_influx, [line]))
 
     @property
     def redis_data(self):
