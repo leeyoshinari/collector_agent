@@ -29,7 +29,7 @@ async def register(request):
                        'password': writer.influx_password, 'database': writer.influx_database}, 'redis': {
                 'host': writer.redis_host, 'port': writer.redis_port, 'password': writer.redis_password,
                 'db': writer.redis_db}, 'deploy_path': writer.deploy_path}
-        if data['type'] == 'monitor-agent':
+        if data['type'] == 'monitor-agent' or data['type'] == 'nginx-agent':
             res = http_get(f"http://{get_configure('address')}/monitor/register/getinfo?host={data['host']}")
             post_data.update(res)
 
