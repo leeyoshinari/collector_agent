@@ -8,9 +8,8 @@ import traceback
 from concurrent.futures import ThreadPoolExecutor
 
 import redis
-import requests
 import influxdb
-from common import get_ip, logger, get_configure
+from common import get_ip, logger, get_configure, http_post
 
 
 class WriterDB(object):
@@ -112,10 +111,6 @@ class WriterDB(object):
 
     def get_config_from_server(self):
         url = f'http://{get_configure("address")}/register/first'
-        header = {
-            "Accept": "application/json, text/plain, */*",
-            "Accept-Encoding": "gzip, deflate",
-            "Content-Type": "application/json; charset=UTF-8"}
         post_data = {
             'host': self.IP,
             'port': get_configure('port')
@@ -123,29 +118,20 @@ class WriterDB(object):
 
         while True:
             try:
-                res = requests.post(url=url, json=post_data, headers=header)
-                logger.info(f"The result of registration is {res.content.decode('unicode_escape')}")
-                if res.status_code == 200:
-                    response_data = json.loads(res.content.decode('unicode_escape'))
-                    if response_data['code'] == 0:
-                        self.influx_host = response_data['data']['influx']['host']
-                        self.influx_port = response_data['data']['influx']['port']
-                        self.influx_username = response_data['data']['influx']['username']
-                        self.influx_password = response_data['data']['influx']['password']
-                        self.influx_database = response_data['data']['influx']['database']
-                        self.redis_host = response_data['data']['redis']['host']
-                        self.redis_port = response_data['data']['redis']['port']
-                        self.redis_password = response_data['data']['redis']['password']
-                        self.redis_db = response_data['data']['redis']['db']
-                        self.deploy_path = response_data['data']['deploy_path']
-                        break
-                    else:
-                        logger.error(response_data['msg'])
-                        raise Exception(response_data['msg'])
-
-                time.sleep(1)
-
-            except(Exception):
+                res = http_post(url, post_data)
+                logger.info(f"The result of registration is {res}")
+                self.influx_host = res['influx']['host']
+                self.influx_port = res['influx']['port']
+                self.influx_username = res['influx']['username']
+                self.influx_password = res['influx']['password']
+                self.influx_database = res['influx']['database']
+                self.redis_host = res['redis']['host']
+                self.redis_port = res['redis']['port']
+                self.redis_password = res['redis']['password']
+                self.redis_db = res['redis']['db']
+                self.deploy_path = res['deploy_path']
+                break
+            except:
                 logger.error(traceback.format_exc())
                 time.sleep(1)
 
@@ -160,25 +146,14 @@ def notification(msg):
     :return:
     """
     url = f'http://{get_configure("address")}/monitor/register/notification'
-
-    header = {
-        "Accept": "application/json, text/plain, */*",
-        "Accept-Encoding": "gzip, deflate",
-        "Content-Type": "application/json; charset=UTF-8"}
-
     post_data = {
         'host': get_ip(),
         'msg': msg
     }
-
     logger.debug(f'The content of the email is {msg}')
 
-    res = requests.post(url=url, json=post_data, headers=header)
-    if res.status_code == 200:
-        response = json.loads(res.content.decode())
-        if response['code'] == 0:
-            logger.info('Send email successfully.')
-        else:
-            logger.error(response['msg'])
-    else:
-        logger.error('Failed to send mail.')
+    try:
+        res = http_post(url, post_data)
+        logger.info('Send email successfully.')
+    except:
+        logger.error(traceback.format_exc())
