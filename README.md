@@ -5,7 +5,7 @@ It can only be used with [MyPlatform](https://github.com/leeyoshinari/MyPlatform
 
 1. Clone Repository
     ```shell script
-    https://github.com/leeyoshinari/collector_agent.git
+    git clone https://github.com/leeyoshinari/collector_agent.git
     ```
 
 2. Modify `config.conf`. Usually don't need to modify, unless you have special requirements.
