@@ -125,12 +125,12 @@ class WriterDB(object):
             if self.redis_client.llen(data['data_key']) >= total_num:
                 res = self.redis_client.lrange(data['data_key'], 0, total_num - 1)
                 self.redis_client.ltrim(data['data_key'], total_num + 1, total_num + 1)  # remove all
-                self.write_jmeter_agent_data_to_influx(data['data_key'], res)
+                self.write_jmeter_agent_data_to_influx(data['task_id'], res)
             _ = self.redis_client.lpush(data['data_key'], str(data['redis']))
             if self.redis_client.llen(data['data_key']) >= total_num:
                 res = self.redis_client.lrange(data['data_key'], 0, total_num - 1)
                 self.redis_client.ltrim(data['data_key'], total_num + 1, total_num + 1)  # remove all
-                self.write_jmeter_agent_data_to_influx(data['data_key'], res)
+                self.write_jmeter_agent_data_to_influx(data['task_id'], res)
             self.redis_client.expire(data['data_key'], 180)
         except:
             logger.error(data)
