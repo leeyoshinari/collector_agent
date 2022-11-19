@@ -80,6 +80,49 @@ async def write_redis(request):
         logger.error(traceback.format_exc())
         return web.json_response({'code': 1, 'msg': 'Write redis failure ~'})
 
+async def write_jmeter_agent(request):
+    """
+        :param request:
+        :return:
+        """
+    try:
+        data = await request.json()
+        writer.jmeter_agent = data
+        return web.json_response({'code': 0, 'msg': 'Write success ~'})
+    except:
+        logger.error(traceback.format_exc())
+        return web.json_response({'code': 1, 'msg': 'Write jmeter-agent failure ~'})
+
+
+async def get_redis_keys(request):
+    """
+    :param request:
+    :return:
+    """
+    try:
+        key = request.match_info['key']
+        num = int(request.match_info['num'])
+        keys = writer.get_redis_keys(key.strip())
+        if num == 1:
+            return web.json_response({'code': 0, 'msg': 'success', 'data': len(keys)})
+        else:
+            return web.json_response({'code': 0, 'msg': 'success', 'data': keys})
+    except:
+        logger.error(traceback.format_exc())
+        return web.json_response({'code': 1, 'msg': 'Get redis key failure ~'})
+
+async def get_redis_value(request):
+    """
+    :param request:
+    :return:
+    """
+    try:
+        key = request.match_info['key']
+        value = writer.get_redis_value(key.strip())
+        return web.json_response({'code': 0, 'msg': 'success', 'data': value})
+    except:
+        logger.error(traceback.format_exc())
+        return web.json_response({'code': 1, 'msg': 'Get redis key failure ~'})
 
 async def set_message(request):
     """
@@ -102,8 +145,11 @@ async def main():
     app.router.add_route('POST', '/redis/write', write_redis)
     app.router.add_route('POST', '/influx/write', write_influx)
     app.router.add_route('POST', '/influx/batch/write', batch_write_influx)
+    app.router.add_route('POST', '/jmeter/agent/write', write_jmeter_agent)
     app.router.add_route('POST', '/register', register)
     app.router.add_route('POST', '/setMessage', set_message)
+    app.router.add_route('GET', '/redis/get/keys/{key}/{num}', get_redis_keys)
+    app.router.add_route('GET', '/redis/get/{key}', get_redis_value)
 
     runner = web.AppRunner(app)
     await runner.setup()

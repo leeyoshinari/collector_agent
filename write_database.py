@@ -17,6 +17,7 @@ class WriterDB(object):
         self._redis_data = None
         self._influx_line = None
         self._influx_batch = []
+        self._jmeter_agent = {}     # exclusively for jmeter-agent
         self.IP = get_ip()
         self.thread_pool = int(get_configure('threadPool')) if int(get_configure('threadPool')) > 0 else 1
 
@@ -67,6 +68,14 @@ class WriterDB(object):
     def redis_data(self, value):
         self.writer_task.put((self.write_redis, value))
 
+    @property
+    def jmeter_agent(self):
+        return self._jmeter_agent
+
+    @jmeter_agent.setter
+    def jmeter_agent(self, value):
+        self.writer_task.put((self.deal_jmeter_agent, value))
+
     def worker(self):
         """
         Get data from the queue and run func
@@ -109,6 +118,38 @@ class WriterDB(object):
             logger.error(line)
             logger.error(traceback.format_exc())
 
+    def deal_jmeter_agent(self, data):
+        try:
+            self.influx_client.write_points(data['influx'])
+            total_num = len(self.redis_client.keys(data['num_key']))
+            if self.redis_client.llen(data['data_key']) >= total_num:
+                res = self.redis_client.lrange(data['data_key'], 0, total_num - 1)
+                self.redis_client.ltrim(data['data_key'], total_num + 1, total_num + 1)  # remove all
+                self.write_jmeter_agent_data_to_influx(data['data_key'], res)
+            _ = self.redis_client.lpush(data['data_key'], str(data))
+            if self.redis_client.llen(data['data_key']) >= total_num:
+                res = self.redis_client.lrange(data['data_key'], 0, total_num - 1)
+                self.redis_client.ltrim(data['data_key'], total_num + 1, total_num + 1)  # remove all
+                self.write_jmeter_agent_data_to_influx(data['data_key'], res)
+            self.redis_client.expire(data['data_key'], 180)
+        except:
+            logger.error(data)
+            logger.error(traceback.format_exc())
+
+    def get_redis_keys(self, key):
+        try:
+            return self.redis_client.keys(key)
+        except:
+            logger.error(traceback.format_exc())
+            raise
+
+    def get_redis_value(self, key):
+        try:
+            return self.redis_client.get(key)
+        except:
+            logger.error(traceback.format_exc())
+            raise
+
     def get_config_from_server(self):
         url = f'http://{get_configure("address")}/register/first'
         post_data = {
@@ -134,6 +175,19 @@ class WriterDB(object):
             except:
                 logger.error(traceback.format_exc())
                 time.sleep(1)
+
+    def write_jmeter_agent_data_to_influx(self, task_id, datas):
+        d = [json.loads(r) for r in datas]
+        data = [r for r in zip(*d)]
+        total_sample = sum(data[0])
+        tps = sum([x * total_sample / y for x, y in zip(data[0], data[1])])
+        rt = sum([x * total_sample / y for x, y in zip(data[0], data[2])])
+        line = [{'measurement': 'performance_jmeter_task',
+                 'tags': {'task': task_id, 'host': 'all'},
+                 'fields': {'c_time': time.strftime("%Y-%m-%d %H:%M:%S"), 'samples': total_sample, 'tps': tps,
+                            'avg_rt': rt, 'min_rt': min(data[3]), 'max_rt': max(data[4]), 'err': sum(data[5]),
+                            'active': sum(data[6])}}]
+        self.influx_client.write_points(line)
 
     def __del__(self):
         del self.redis_client, self.influx_client
