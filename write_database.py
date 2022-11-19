@@ -180,8 +180,8 @@ class WriterDB(object):
         d = [json.loads(r) for r in datas]
         data = [r for r in zip(*d)]
         total_sample = sum(data[0])
-        tps = sum([x * total_sample / y for x, y in zip(data[0], data[1])])
-        rt = sum([x * total_sample / y for x, y in zip(data[0], data[2])])
+        tps = sum([x * y / total_sample for x, y in zip(data[0], data[1])])
+        rt = sum([x * y / total_sample for x, y in zip(data[0], data[2])])
         line = [{'measurement': 'performance_jmeter_task',
                  'tags': {'task': task_id, 'host': 'all'},
                  'fields': {'c_time': time.strftime("%Y-%m-%d %H:%M:%S"), 'samples': total_sample, 'tps': tps,
