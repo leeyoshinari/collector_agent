@@ -182,11 +182,10 @@ class WriterDB(object):
         data = [r for r in zip(*d)]
         logger.debug(data)
         total_sample = sum(data[0])
-        tps = sum([x * y / total_sample for x, y in zip(data[0], data[1])])
         rt = sum([x * y / total_sample for x, y in zip(data[0], data[2])])
         line = [{'measurement': 'performance_jmeter_task',
                  'tags': {'task': task_id, 'host': 'all'},
-                 'fields': {'c_time': time.strftime("%Y-%m-%d %H:%M:%S"), 'samples': total_sample, 'tps': tps,
+                 'fields': {'c_time': time.strftime("%Y-%m-%d %H:%M:%S"), 'samples': total_sample, 'tps': sum(data[1]),
                             'avg_rt': rt, 'min_rt': min(data[3]), 'max_rt': max(data[4]), 'err': sum(data[5]),
                             'active': sum(data[6])}}]
         self.influx_client.write_points(line)
