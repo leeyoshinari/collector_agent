@@ -120,6 +120,7 @@ class WriterDB(object):
 
     def deal_jmeter_agent(self, data):
         try:
+            logger.debug(data)
             self.influx_client.write_points(data['influx'])
             total_num = len(self.redis_client.keys(data['num_key']))
             if self.redis_client.llen(data['data_key']) >= total_num:
@@ -179,6 +180,7 @@ class WriterDB(object):
     def write_jmeter_agent_data_to_influx(self, task_id, datas):
         d = [json.loads(r) for r in datas]
         data = [r for r in zip(*d)]
+        logger.debug(data)
         total_sample = sum(data[0])
         tps = sum([x * y / total_sample for x, y in zip(data[0], data[1])])
         rt = sum([x * y / total_sample for x, y in zip(data[0], data[2])])
