@@ -1,5 +1,5 @@
 # collector_agent
-It can only be used with [MyPlatform](https://github.com/leeyoshinari/MyPlatform.git), and can't be used alone.
+It can be only used with [MyPlatform](https://github.com/leeyoshinari/MyPlatform.git), and can't be used alone.
 
 ## Deploy
 
@@ -21,4 +21,3 @@ It can only be used with [MyPlatform](https://github.com/leeyoshinari/MyPlatform
 - (5) Deploy collector_agent
    
 NOTE: For Linux Server, the executable file packaged on the server of the CentOS system X86 architecture can only run on the server of the CentOS system X86 architecture; servers of other system and architecture need to be repackaged. <br>
-
