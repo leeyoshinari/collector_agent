@@ -33,7 +33,6 @@ async def register(request):
             res = http_get(f"http://{get_configure('address')}/monitor/register/getinfo?host={data['host']}")
             post_data.update(res)
 
-        del data, res
         return web.json_response({'code': 0, 'msg': '', 'data': post_data})
     except:
         logger.error(traceback.format_exc())
