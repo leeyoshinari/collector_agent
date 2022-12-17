@@ -105,6 +105,8 @@ class WriterDB(object):
         except:
             logger.error(data)
             logger.error(traceback.format_exc())
+        finally:
+            del data
 
     def write_influx(self, line):
         """
@@ -117,6 +119,8 @@ class WriterDB(object):
         except:
             logger.error(line)
             logger.error(traceback.format_exc())
+        finally:
+            del line
 
     def deal_jmeter_agent(self, data):
         try:
@@ -136,6 +140,8 @@ class WriterDB(object):
         except:
             logger.error(data)
             logger.error(traceback.format_exc())
+        finally:
+            del data
 
     def get_redis_keys(self, key):
         try:
@@ -189,6 +195,7 @@ class WriterDB(object):
                             'avg_rt': rt, 'min_rt': min(data[3]), 'max_rt': max(data[4]), 'err': sum(data[5]),
                             'active': sum(data[6])}}]
         self.influx_client.write_points(line)
+        del task_id, datas, data, d, total_sample, rt, line
 
     def __del__(self):
         del self.redis_client, self.influx_client
@@ -212,3 +219,5 @@ def notification(msg):
         logger.info('Send email successfully.')
     except:
         logger.error(traceback.format_exc())
+    finally:
+        del msg, post_data, res

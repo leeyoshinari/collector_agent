@@ -54,6 +54,7 @@ def http_post(url, post_data):
         logger.info(f"The result of request is {res.content.decode('unicode_escape')}")
         if res.status_code == 200:
             response_data = json.loads(res.content.decode('unicode_escape'))
+            del res
             if response_data['code'] == 0:
                 return response_data['data']
             else:
@@ -70,6 +71,7 @@ def http_get(url):
         logger.info(f"The result of request is {res.content.decode('unicode_escape')}")
         if res.status_code == 200:
             response_data = json.loads(res.content.decode('unicode_escape'))
+            del res
             if response_data['code'] == 0:
                 return response_data['data']
             else:

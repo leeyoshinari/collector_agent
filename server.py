@@ -33,6 +33,7 @@ async def register(request):
             res = http_get(f"http://{get_configure('address')}/monitor/register/getinfo?host={data['host']}")
             post_data.update(res)
 
+        del data, res
         return web.json_response({'code': 0, 'msg': '', 'data': post_data})
     except:
         logger.error(traceback.format_exc())
@@ -47,6 +48,7 @@ async def write_influx(request):
     try:
         data = await request.json()
         writer.influx_line = data.get('data')
+        del data
         return web.json_response({'code': 0, 'msg': 'Write influxDB success ~'})
     except:
         logger.error(traceback.format_exc())
@@ -61,6 +63,7 @@ async def batch_write_influx(request):
     try:
         data = await request.json()
         writer.influx_batch = data.get('data')
+        del data
         return web.json_response({'code': 0, 'msg': 'Write influxDB success ~'})
     except:
         logger.error(traceback.format_exc())
@@ -75,6 +78,7 @@ async def write_redis(request):
     try:
         data = await request.json()
         writer.redis_data = data.get('data')
+        del data
         return web.json_response({'code': 0, 'msg': 'Write redis success ~'})
     except:
         logger.error(traceback.format_exc())
@@ -88,6 +92,7 @@ async def write_jmeter_agent(request):
     try:
         data = await request.json()
         writer.jmeter_agent = data
+        del data
         return web.json_response({'code': 0, 'msg': 'Write success ~'})
     except:
         logger.error(traceback.format_exc())
@@ -133,6 +138,7 @@ async def set_message(request):
         data = await request.json()
         url = f'http://{get_configure("address")}/performance/task/register/getMessage'
         _ = http_post(url, data)
+        del data
         return web.json_response({'code': 0, 'msg': 'success ~'})
     except:
         logger.error(traceback.format_exc())
