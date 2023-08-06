@@ -42,8 +42,11 @@ class WriterDB(object):
         pool = redis.ConnectionPool(host=self.redis_host, port=self.redis_port, password=self.redis_password,
                                     db=self.redis_db, decode_responses=True, max_connections=10)
         self.redis_client = redis.StrictRedis(connection_pool=pool)
-        groups_info = self.redis_client.xinfo_groups(name=self.influx_stream)
-        if not groups_info:
+        try:
+            groups_info = self.redis_client.xinfo_groups(name=self.influx_stream)
+            if not groups_info:
+                self.redis_client.xgroup_create(name=self.influx_stream, groupname=self.group_name, mkstream=True)
+        except redis.exceptions.ResponseError:
             self.redis_client.xgroup_create(name=self.influx_stream, groupname=self.group_name, mkstream=True)
 
         self.writer()
