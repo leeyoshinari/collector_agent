@@ -47,27 +47,10 @@ async def write_influx(request):
     try:
         data = await request.json()
         writer.influx_line = data.get('data')
-        del data
         return web.json_response({'code': 0, 'msg': 'Write influxDB success ~'})
     except:
         logger.error(traceback.format_exc())
         return web.json_response({'code': 1, 'msg': 'Write influxDB failure ~'})
-
-
-async def batch_write_influx(request):
-    """
-    :param request:
-    :return:
-    """
-    try:
-        data = await request.json()
-        writer.influx_batch = data.get('data')
-        del data
-        return web.json_response({'code': 0, 'msg': 'Write influxDB success ~'})
-    except:
-        logger.error(traceback.format_exc())
-        return web.json_response({'code': 1, 'msg': 'Write influxDB failure ~'})
-
 
 async def write_redis(request):
     """
@@ -77,7 +60,6 @@ async def write_redis(request):
     try:
         data = await request.json()
         writer.redis_data = data.get('data')
-        del data
         return web.json_response({'code': 0, 'msg': 'Write redis success ~'})
     except:
         logger.error(traceback.format_exc())
@@ -137,7 +119,6 @@ async def set_message(request):
         data = await request.json()
         url = f'http://{get_configure("address")}/performance/task/register/getMessage'
         _ = http_post(url, data)
-        del data
         return web.json_response({'code': 0, 'msg': 'success ~'})
     except:
         logger.error(traceback.format_exc())
@@ -149,7 +130,6 @@ async def main():
 
     app.router.add_route('POST', '/redis/write', write_redis)
     app.router.add_route('POST', '/influx/write', write_influx)
-    app.router.add_route('POST', '/influx/batch/write', batch_write_influx)
     app.router.add_route('POST', '/jmeter/agent/write', write_jmeter_agent)
     app.router.add_route('POST', '/register', register)
     app.router.add_route('POST', '/setMessage', set_message)

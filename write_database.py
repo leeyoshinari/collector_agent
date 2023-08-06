@@ -14,6 +14,8 @@ from common import get_ip, logger, get_configure, http_post
 
 class WriterDB(object):
     def __init__(self):
+        self.influx_stream = 'influx_stream'  # stream name
+        self.group_name = 'my_group'  # consumer group name
         self._redis_data = None
         self._influx_line = None
         self._influx_batch = []
@@ -37,8 +39,9 @@ class WriterDB(object):
         self.executor = ThreadPoolExecutor(self.thread_pool)
         self.influx_client = influxdb.InfluxDBClient(self.influx_host, self.influx_port, self.influx_username,
                                               self.influx_password, self.influx_database)
-        self.redis_client = redis.Redis(host=self.redis_host, port=self.redis_port, password=self.redis_password,
-                                        db=self.redis_db, decode_responses=True)
+        pool = redis.ConnectionPool(host=self.redis_host, port=self.redis_port, password=self.redis_password,
+                                    db=self.redis_db, decode_responses=True, max_connections=10)
+        self.redis_client = redis.StrictRedis(connection_pool=pool)
 
         self.writer()
 
@@ -49,16 +52,6 @@ class WriterDB(object):
     @influx_line.setter
     def influx_line(self, value):
         self.writer_task.put((self.write_influx, value))
-
-    @property
-    def influx_batch(self):
-        return self._influx_batch
-
-    @influx_batch.setter
-    def influx_batch(self, value):
-        # Still write data one by one, aimed to reduce http request time.
-        for line in value:
-            self.writer_task.put((self.write_influx, [line]))
 
     @property
     def redis_data(self):
@@ -91,7 +84,8 @@ class WriterDB(object):
         start multiple threads
         :return:
         """
-        for i in range(self.thread_pool):
+        self.executor.submit(self.subscribe)
+        for i in range(self.thread_pool-1):
             self.executor.submit(self.worker)
 
     def write_redis(self, data: list):
@@ -108,6 +102,17 @@ class WriterDB(object):
         finally:
             del data
 
+    def subscribe(self):
+        while True:
+            messages = self.redis_client.xreadgroup(groupname=self.group_name, consumername=self.IP,
+                                                  streams={self.influx_stream: '>'}, count=10, block=900000000)
+            logger.debug(messages)
+            for stream, message in messages.items():
+                logger.debug(message)
+                for message_id, message_data in message:
+                    self.write_influx(message_data)
+                    self.redis_client.xack(self.influx_stream, self.IP, message_id)
+
     def write_influx(self, line):
         """
         :param line:
@@ -119,8 +124,6 @@ class WriterDB(object):
         except:
             logger.error(line)
             logger.error(traceback.format_exc())
-        finally:
-            del line
 
     def deal_jmeter_agent(self, data):
         try:
@@ -159,10 +162,7 @@ class WriterDB(object):
 
     def get_config_from_server(self):
         url = f'http://{get_configure("address")}/register/first'
-        post_data = {
-            'host': self.IP,
-            'port': get_configure('port')
-        }
+        post_data = {'host': self.IP, 'port': get_configure('port')}
 
         while True:
             try:
@@ -197,27 +197,3 @@ class WriterDB(object):
         self.influx_client.write_points(line)
         del task_id, datas, data, d, total_sample, rt, line
 
-    def __del__(self):
-        del self.redis_client, self.influx_client
-
-
-def notification(msg):
-    """
-     Send email.
-    :param msg: Email body
-    :return:
-    """
-    url = f'http://{get_configure("address")}/monitor/register/notification'
-    post_data = {
-        'host': get_ip(),
-        'msg': msg
-    }
-    logger.debug(f'The content of the email is {msg}')
-
-    try:
-        res = http_post(url, post_data)
-        logger.info('Send email successfully.')
-    except:
-        logger.error(traceback.format_exc())
-    finally:
-        del msg, post_data, res
