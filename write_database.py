@@ -110,12 +110,10 @@ class WriterDB(object):
             try:
                 messages = self.redis_client.xreadgroup(groupname=self.group_name, consumername=self.IP,
                                                         streams={self.influx_stream: '>'}, count=10, block=900000000)
-                logger.debug(messages)
                 for message in messages:
-                    for _, data in message:
-                        for d in data:
-                            self.write_influx(json.loads(d[1]['data']))
-                            self.redis_client.xack(self.influx_stream, self.IP, d[0])
+                    for data in message[-1]:
+                        self.write_influx(json.loads(data[1]['data']))
+                        self.redis_client.xack(self.influx_stream, self.IP, data[0])
             except:
                 logger.error(traceback.format_exc())
 
