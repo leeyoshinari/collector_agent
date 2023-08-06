@@ -42,6 +42,9 @@ class WriterDB(object):
         pool = redis.ConnectionPool(host=self.redis_host, port=self.redis_port, password=self.redis_password,
                                     db=self.redis_db, decode_responses=True, max_connections=10)
         self.redis_client = redis.StrictRedis(connection_pool=pool)
+        groups_info = self.redis_client.xinfo_groups(name=self.influx_stream)
+        if not groups_info:
+            self.redis_client.xgroup_create(name=self.influx_stream, groupname=self.group_name, mkstream=True)
 
         self.writer()
 
@@ -104,14 +107,17 @@ class WriterDB(object):
 
     def subscribe(self):
         while True:
-            messages = self.redis_client.xreadgroup(groupname=self.group_name, consumername=self.IP,
-                                                  streams={self.influx_stream: '>'}, count=10, block=900000000)
-            logger.debug(messages)
-            for stream, message in messages.items():
-                logger.debug(message)
-                for message_id, message_data in message:
-                    self.write_influx(message_data)
-                    self.redis_client.xack(self.influx_stream, self.IP, message_id)
+            try:
+                messages = self.redis_client.xreadgroup(groupname=self.group_name, consumername=self.IP,
+                                                        streams={self.influx_stream: '>'}, count=10, block=900000000)
+                logger.debug(messages)
+                for stream, message in messages.items():
+                    logger.debug(message)
+                    for message_id, message_data in message:
+                        self.write_influx(message_data)
+                        self.redis_client.xack(self.influx_stream, self.IP, message_id)
+            except:
+                logger.error(traceback.format_exc())
 
     def write_influx(self, line):
         """
